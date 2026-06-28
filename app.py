@@ -6,14 +6,12 @@ Run with:  streamlit run app.py
 from __future__ import annotations
 
 import re
-import sys
 import traceback
 from dataclasses import dataclass
-from datetime import datetime, date
+from datetime import date, datetime
 from pathlib import Path
 
 import streamlit as st
-
 
 # ---------------------------------------------------------------------------
 # Paths & constants
@@ -298,7 +296,7 @@ def _render_section_analysts(run: Run) -> None:
         st.info("No analyst reports.")
         return
     sub = st.tabs([lbl for _, lbl in files])
-    for tab, (path, label) in zip(sub, files):
+    for tab, (path, label) in zip(sub, files, strict=False):
         with tab:
             body = read_md(path) or ""
             cols = st.columns([8, 1])
@@ -361,7 +359,7 @@ def _render_section_risk(run: Run) -> None:
 
     order = [("Aggressive", "🔥"), ("Neutral", "⚖️"), ("Conservative", "🛡️")]
     pop_cols = st.columns([5, 1, 1, 1])
-    for col, (label, icon) in zip(pop_cols[1:], order):
+    for col, (label, icon) in zip(pop_cols[1:], order, strict=False):
         with col:
             body = read_md(files_map.get(label)) if files_map.get(label) else f"_No {label.lower()} analysis._"
             _popout_button(
@@ -370,7 +368,7 @@ def _render_section_risk(run: Run) -> None:
             )
 
     cols = st.columns(3)
-    for col, (label, icon) in zip(cols, order):
+    for col, (label, icon) in zip(cols, order, strict=False):
         with col:
             st.markdown(f'<div class="col-header">{icon} {label}</div>', unsafe_allow_html=True)
             p = files_map.get(label)
@@ -464,12 +462,18 @@ def page_dashboard(runs: list[Run]) -> None:
         "⚖️ Risk",
         "📄 Full Report",
     ])
-    with section_tabs[0]: _render_section_portfolio(run)
-    with section_tabs[1]: _render_section_analysts(run)
-    with section_tabs[2]: _render_section_research(run)
-    with section_tabs[3]: _render_section_trading(run)
-    with section_tabs[4]: _render_section_risk(run)
-    with section_tabs[5]: _render_section_full(run)
+    with section_tabs[0]:
+        _render_section_portfolio(run)
+    with section_tabs[1]:
+        _render_section_analysts(run)
+    with section_tabs[2]:
+        _render_section_research(run)
+    with section_tabs[3]:
+        _render_section_trading(run)
+    with section_tabs[4]:
+        _render_section_risk(run)
+    with section_tabs[5]:
+        _render_section_full(run)
 
     # --- History (collapsible toggle bar at the bottom) ---
     st.write("")
@@ -589,6 +593,7 @@ def _api_key_env(provider: str) -> str | None:
 def _save_api_key(env_var: str, value: str) -> Path:
     """Persist an API key to project .env and the running process environment."""
     import os as _os
+
     from dotenv import find_dotenv, set_key
     env_path = find_dotenv(usecwd=True) or str(PROJECT_DIR / ".env")
     Path(env_path).touch(exist_ok=True)
@@ -700,10 +705,7 @@ def page_run() -> None:
 
     # Default to Ollama if no OpenAI key is set, otherwise OpenAI.
     import os as _os
-    if _os.environ.get("OPENAI_API_KEY"):
-        default_provider = "openai"
-    else:
-        default_provider = "ollama"
+    default_provider = "openai" if _os.environ.get("OPENAI_API_KEY") else "ollama"
     default_idx = provider_keys.index(default_provider) if default_provider in provider_keys else 0
 
     pc1, pc2 = st.columns([2, 3])
@@ -770,8 +772,8 @@ def page_run() -> None:
                         )
                 elif installed:
                     st.error(
-                        f"⚠ None of your installed Ollama models support tool calling, which the "
-                        f"trading agents require.\n\nYou have: "
+                        "⚠ None of your installed Ollama models support tool calling, which the "
+                        "trading agents require.\n\nYou have: "
                         + ", ".join(f"`{m}`" for m in installed)
                         + "\n\nPull a tool-capable model — recommended:\n"
                         "```bash\nollama pull qwen3        # 8B, great default\n"
@@ -889,11 +891,16 @@ def page_run() -> None:
         and api_key_ready
     )
     missing = []
-    if not ticker: missing.append("ticker")
-    if not selected_analysts: missing.append("at least one analyst")
-    if not quick_model: missing.append("quick-thinking model")
-    if not deep_model: missing.append("deep-thinking model")
-    if not api_key_ready: missing.append(f"{env_var}")
+    if not ticker:
+        missing.append("ticker")
+    if not selected_analysts:
+        missing.append("at least one analyst")
+    if not quick_model:
+        missing.append("quick-thinking model")
+    if not deep_model:
+        missing.append("deep-thinking model")
+    if not api_key_ready:
+        missing.append(f"{env_var}")
 
     launch_label = "▶ Run analysis" if can_run else f"Missing: {', '.join(missing)}"
     launched = st.button(launch_label, type="primary", use_container_width=True, disabled=not can_run)
