@@ -1,0 +1,8 @@
+# Project core (reads pyproject.toml for the TradingAgents framework + all
+# LLM/data deps). Listed first so its constraints are resolved together with
+# the Streamlit UI deps below.
+.
+
+# Streamlit UI (app.py). Pinned to >=1.58 because earlier versions cap pandas
+# at <3, conflicting with the project's pandas>=2.3 (which resolves to 3.x).
+streamlit>=1.58
