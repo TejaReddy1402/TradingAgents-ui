@@ -719,11 +719,23 @@ def page_run() -> None:
         default_url = providers[provider_displays.index(provider_display)][2]
 
     with pc2:
-        backend_url = st.text_input(
-            "Backend URL",
-            value=default_url or "",
-            help="Leave default unless using a custom relay / self-hosted endpoint.",
-        )
+        # Some providers (Google, Azure, Bedrock) use SDK-managed endpoints, so
+        # there's nothing to type. Show a placeholder so the empty field reads
+        # as intentional rather than broken.
+        if default_url is None:
+            backend_url = st.text_input(
+                "Backend URL",
+                value="",
+                placeholder=f"(not used — {provider_display} uses its SDK's built-in endpoint)",
+                help=f"{provider_display} doesn't use a configurable base URL. Leave this blank.",
+                disabled=True,
+            )
+        else:
+            backend_url = st.text_input(
+                "Backend URL",
+                value=default_url,
+                help="Leave default unless using a custom relay / self-hosted endpoint.",
+            )
 
     # Ollama-specific helper: ping the server + list installed models, then
     # probe each model's capabilities so we only offer tool-calling models in
