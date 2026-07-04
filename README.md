@@ -160,10 +160,82 @@ It walks you through the same selections interactively.
 
 ## Deployment
 
-The Streamlit UI deploys to [Streamlit Community Cloud](https://share.streamlit.io) with no code changes — point it at your repo and pick `app.py` as the entry. Two caveats to be aware of:
+The Streamlit UI runs three ways. Pick the one that matches how you want to use it.
 
-- **Ollama does not work in the cloud** because it runs on your local machine. For cloud-deployed instances, use a hosted API provider.
-- **API keys go in the Streamlit Cloud secrets manager**, never in `.env` or committed to the repo.
+### 1. Local only (simplest, no cloud, no key needed)
+
+```bash
+streamlit run app.py
+```
+
+Ollama running on the same machine handles all inference. No cost, no external dependencies, no data leaves your box. Recommended if you're the only user.
+
+### 2. Streamlit Community Cloud with a hosted API provider (public URL, pay-per-token)
+
+Deploy to [Streamlit Community Cloud](https://share.streamlit.io):
+
+1. Push your fork to GitHub (public repo, or grant Streamlit Cloud access to a private one).
+2. https://share.streamlit.io → **New app** → pick your repo, branch `main`, main file `app.py`.
+3. **Advanced settings → Secrets** — paste the provider key(s):
+   ```toml
+   OPENAI_API_KEY = "sk-..."
+   # or GROQ_API_KEY = "gsk_..." / GOOGLE_API_KEY = "AIzaSy..." / etc.
+   ```
+4. Deploy.
+
+Ollama does **not** work in this mode because Streamlit Cloud servers can't reach your laptop. Free-tier providers (Groq, Gemini) have TPM limits that this multi-agent workflow may hit — Groq's Dev Tier or Gemini's Cloud Console keys are the practical choices for cost-effective cloud use.
+
+### 3. Hybrid — cloud UI + local Ollama tunneled through Cloudflare (free, private inference, public URL)
+
+This is the setup this fork is designed around: the UI is publicly accessible via Streamlit Cloud, but all LLM inference runs on your laptop's GPU through Ollama. No API keys, no per-token cost, your prompts never leave hardware you control.
+
+**One-time setup:**
+
+1. **Install Ollama** from https://ollama.com and pull a tool-capable model:
+   ```bash
+   ollama pull qwen3         # or llama3.1 / gpt-oss / gemma3+
+   ```
+
+2. **Allow non-localhost Origins** so requests coming through the tunnel aren't rejected by Ollama's default Host check. Set two user-scope environment variables (Windows PowerShell):
+   ```powershell
+   [System.Environment]::SetEnvironmentVariable("OLLAMA_ORIGINS", "*", "User")
+   [System.Environment]::SetEnvironmentVariable("OLLAMA_HOST", "0.0.0.0:11434", "User")
+   ```
+   Restart Ollama so it picks the values up.
+
+3. **Install Cloudflare Tunnel:**
+   ```bash
+   winget install --id Cloudflare.cloudflared     # or download the .msi from cloudflare/cloudflared releases
+   ```
+
+4. **Deploy the UI to Streamlit Cloud** exactly like option 2 above. Skip the provider API keys.
+
+**Each time you want to use the app:**
+
+1. Start Ollama (usually auto-starts on login; check the taskbar).
+2. Start the tunnel in its own terminal — leave it running:
+   ```bash
+   cloudflared tunnel --url http://localhost:11434
+   ```
+   The output prints a `https://<random-words>.trycloudflare.com` URL. Copy it.
+
+3. Add the tunnel URL to Streamlit Cloud → app **Settings → Secrets**:
+   ```toml
+   OLLAMA_BASE_URL = "https://<random-words>.trycloudflare.com/v1"
+   ```
+   The `/v1` suffix matters — that's Ollama's OpenAI-compatible endpoint.
+   Save; the app auto-reboots in ~30 seconds.
+
+4. Open your `<subdomain>.streamlit.app` URL. Provider auto-defaults to **Ollama**. The Ollama probe pings your tunnel and lists the installed tool-capable models. Pick one, run analysis. The request travels: browser → Streamlit Cloud → Cloudflare → your laptop → Ollama → back the same way.
+
+**Tradeoffs to know:**
+
+- **Laptop must stay on** while the app is in use. Close the lid or lose Wi-Fi and the tunnel breaks; the app throws "Ollama unreachable" until you restart cloudflared.
+- **The tunnel URL is public.** The random subdomain is hard to guess but not secret. For a personal dashboard this is fine; for anything shared, add [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/applications/) (free tier) to gate the tunnel behind a login.
+- **URL rotates on restart** — quick tunnels get a fresh URL every time cloudflared starts. Update the Streamlit Cloud secret each time, or set up a [named tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/create-remote-tunnel/) with a stable subdomain (requires a Cloudflare account and a domain, ~$8/yr for a `.xyz`).
+- **Latency** is home-internet + laptop-GPU speed. Fine for gemma3/qwen3 8B; slow for anything above ~30B unless your laptop has serious silicon.
+
+**Cost:** $0. Ollama and Cloudflare Quick Tunnels are free indefinitely.
 
 ---
 
