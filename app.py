@@ -719,6 +719,12 @@ def page_run() -> None:
         default_url = providers[provider_displays.index(provider_display)][2]
 
     with pc2:
+        # Use a provider-scoped key so switching providers gives Streamlit a
+        # NEW widget with the new default URL, instead of retaining the
+        # previous provider's value (e.g. Ollama's localhost URL sticking
+        # around after the user picks Groq).
+        backend_url_key = f"backend_url_{provider_key}"
+
         # Some providers (Google, Azure, Bedrock) use SDK-managed endpoints, so
         # there's nothing to type. Show a placeholder so the empty field reads
         # as intentional rather than broken.
@@ -729,12 +735,14 @@ def page_run() -> None:
                 placeholder=f"(not used — {provider_display} uses its SDK's built-in endpoint)",
                 help=f"{provider_display} doesn't use a configurable base URL. Leave this blank.",
                 disabled=True,
+                key=backend_url_key,
             )
         else:
             backend_url = st.text_input(
                 "Backend URL",
                 value=default_url,
                 help="Leave default unless using a custom relay / self-hosted endpoint.",
+                key=backend_url_key,
             )
 
     # Ollama-specific helper: ping the server + list installed models, then
@@ -833,8 +841,11 @@ def page_run() -> None:
                 model_id = st.text_input(f"Custom {mode_label.lower()} model ID", value="", key=f"{key}_custom").strip()
             return model_id
 
-    quick_model = _model_picker(mc1, "Quick-thinking model", quick_options, "quick_model")
-    deep_model = _model_picker(mc2, "Deep-thinking model", deep_options, "deep_model")
+    # Provider-scoped keys so switching provider resets the model picker
+    # (otherwise Streamlit keeps the previous provider's model text in the
+    # widget, which would then be sent as the model ID for the new provider).
+    quick_model = _model_picker(mc1, "Quick-thinking model", quick_options, f"quick_model_{provider_key}")
+    deep_model = _model_picker(mc2, "Deep-thinking model", deep_options, f"deep_model_{provider_key}")
 
     # --- Provider-specific reasoning effort ---
     reasoning_effort = None
