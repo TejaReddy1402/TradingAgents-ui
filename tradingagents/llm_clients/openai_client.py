@@ -129,6 +129,26 @@ class DeepSeekChatOpenAI(NormalizedChatOpenAI):
         return chat_result
 
 
+class GroqChatOpenAI(NormalizedChatOpenAI):
+    """Groq-specific overrides on top of the OpenAI-compatible client.
+
+    Groq's Llama-family models are trained on Llama's native
+    ``<function=name,args>`` tag syntax for tool calls. When the request
+    enables ``parallel_tool_calls`` (langchain's default), the model
+    switches to that tag format instead of emitting proper JSON
+    ``tool_calls`` — and Groq's server-side validator rejects the raw tags
+    with HTTP 400 ``tool_use_failed``. Forcing ``parallel_tool_calls=False``
+    at bind time keeps Llama on the JSON path.
+
+    Kimi K2 and Qwen3 don't share this training quirk, but the flag is a
+    no-op for them, so we apply it uniformly across all Groq models.
+    """
+
+    def bind_tools(self, tools, **kwargs):
+        kwargs.setdefault("parallel_tool_calls", False)
+        return super().bind_tools(tools, **kwargs)
+
+
 class MinimaxChatOpenAI(NormalizedChatOpenAI):
     """MiniMax-specific overrides on top of the OpenAI-compatible client.
 
@@ -222,7 +242,7 @@ OPENAI_COMPATIBLE_PROVIDERS: dict[str, ProviderSpec] = {
     "openrouter": ProviderSpec(base_url="https://openrouter.ai/api/v1"),
     "mistral":    ProviderSpec(base_url="https://api.mistral.ai/v1"),
     "kimi":       ProviderSpec(base_url="https://api.moonshot.ai/v1"),
-    "groq":       ProviderSpec(base_url="https://api.groq.com/openai/v1"),
+    "groq":       ProviderSpec(base_url="https://api.groq.com/openai/v1", chat_class=GroqChatOpenAI),
     "nvidia":     ProviderSpec(base_url="https://integrate.api.nvidia.com/v1"),
     "ollama":     ProviderSpec(base_url="http://localhost:11434/v1", base_url_env="OLLAMA_BASE_URL",
                                key_optional=True, placeholder_key="ollama"),
