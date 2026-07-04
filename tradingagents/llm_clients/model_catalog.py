@@ -184,7 +184,28 @@ MODEL_OPTIONS: ProviderModeOptions = {
     # model their account has access to.
     "mistral": _CUSTOM_ONLY,
     "kimi": _CUSTOM_ONLY,
-    "groq": _CUSTOM_ONLY,
+    # Groq: tool-capable models ordered by free-tier tokens-per-minute limit
+    # (higher = more headroom for multi-agent runs before hitting rate limits).
+    # 8B-instant is picked as the "quick" default because it clears the 12k TPM
+    # cap that trips up the 70B on free tier during a 4-analyst debate.
+    "groq": {
+        "quick": [
+            ("Llama 3.1 8B Instant — fastest, 30k TPM free-tier limit", "llama-3.1-8b-instant"),
+            ("Llama 3.3 70B Versatile — stronger, 12k TPM (may hit limits)", "llama-3.3-70b-versatile"),
+            ("Kimi K2 Instruct — trained for agentic tool use", "moonshotai/kimi-k2-instruct"),
+            ("Qwen 3 32B — reliable structured output", "qwen/qwen3-32b"),
+            ("Gemma 2 9B IT — small + fast, 15k TPM", "gemma2-9b-it"),
+            ("Custom model ID", "custom"),
+        ],
+        "deep": [
+            ("Llama 3.3 70B Versatile — strongest general model", "llama-3.3-70b-versatile"),
+            ("DeepSeek R1 Distill Llama 70B — reasoning-focused", "deepseek-r1-distill-llama-70b"),
+            ("Kimi K2 Instruct — agentic tool use", "moonshotai/kimi-k2-instruct"),
+            ("Qwen 3 32B — solid reasoning", "qwen/qwen3-32b"),
+            ("Llama 3.1 8B Instant — fits free-tier limits", "llama-3.1-8b-instant"),
+            ("Custom model ID", "custom"),
+        ],
+    },
     "nvidia": _CUSTOM_ONLY,
     # Bedrock model IDs / cross-region inference profile IDs are user-specified.
     "bedrock": _CUSTOM_ONLY,
