@@ -1035,11 +1035,34 @@ def page_run() -> None:
                 debug=False,
                 config=config,
             )
-            st.write("Propagating through agents — this may take several minutes. Watch the terminal for live progress.")
+            _AGENT_LABELS = {
+                "market_analyst": "\U0001f4ca Market Analyst",
+                "sentiment_analyst": "\U0001f4ac Sentiment Analyst",
+                "news_analyst": "\U0001f4f0 News Analyst",
+                "fundamentals_analyst": "\U0001f4c8 Fundamentals Analyst",
+                "bull_researcher": "\U0001f402 Bull Researcher",
+                "bear_researcher": "\U0001f43b Bear Researcher",
+                "research_manager": "\U0001f52c Research Manager",
+                "trader": "\U0001f4bc Trader",
+                "aggressive_risk": "\U0001f525 Aggressive Risk",
+                "neutral_risk": "⚖️ Neutral Risk",
+                "conservative_risk": "\U0001f6e1️ Conservative Risk",
+                "portfolio_manager": "\U0001f3e6 Portfolio Manager",
+            }
+            _progress_box = st.empty()
+            _completed: list[str] = []
+
+            def _on_agent_step(node: str) -> None:
+                label = _AGENT_LABELS.get(node, f"⚙️ {node.replace('_', ' ').title()}")
+                _completed.append(f"✓ {label}")
+                _progress_box.markdown("  \n".join(_completed))
+
+            st.write("Running agents — live progress below:")
             final_state, decision = ta.propagate(
                 canonical_ticker,
                 trade_date.isoformat(),
                 asset_type=asset_type,
+                progress_callback=_on_agent_step,
             )
             st.write("Writing report tree…")
             ta.save_reports(final_state, canonical_ticker, save_path=save_path)
