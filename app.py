@@ -5,6 +5,7 @@ Run with:  streamlit run app.py
 
 from __future__ import annotations
 
+import contextlib
 import re
 import traceback
 from dataclasses import dataclass
@@ -12,6 +13,18 @@ from datetime import date, datetime
 from pathlib import Path
 
 import streamlit as st
+
+
+# Pre-warm the tradingagents package import once per server process.
+# langchain_core (a transitive dep of langgraph) is slow to import cold;
+# doing it here with cache_resource means the first page render doesn't block
+# on it — subsequent reruns hit the cached no-op and return instantly.
+@st.cache_resource(show_spinner=False)
+def _warm_imports() -> None:
+    with contextlib.suppress(Exception):
+        import tradingagents  # noqa: F401
+
+_warm_imports()
 
 # ---------------------------------------------------------------------------
 # Paths & constants
@@ -569,6 +582,7 @@ def _load_provider_table() -> list[tuple[str, str, str | None]]:
     ]
 
 
+@st.cache_data(show_spinner=False)
 def _load_model_options(provider: str, mode: str) -> list[tuple[str, str]]:
     """(display, model_id) for a provider+mode. Empty list if catalog is missing."""
     try:
@@ -578,6 +592,7 @@ def _load_model_options(provider: str, mode: str) -> list[tuple[str, str]]:
         return []
 
 
+@st.cache_data(show_spinner=False)
 def _api_key_env(provider: str) -> str | None:
     try:
         from tradingagents.llm_clients.api_key_env import get_api_key_env

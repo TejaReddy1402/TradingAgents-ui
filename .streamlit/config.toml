@@ -7,11 +7,9 @@ textColor = "#0f172a"
 font = "sans serif"
 
 [server]
-# Headless = true so Streamlit doesn't try to open a browser or block on the
-# first-run welcome prompt. Locally `streamlit run` still works fine; only the
-# auto-open behavior is suppressed.
 headless = true
-runOnSave = true
+runOnSave = false
+fileWatcherType = "none"
 
 [browser]
 gatherUsageStats = false
