@@ -242,6 +242,28 @@ CUSTOM_CSS = """
 
     /* Tab labels a bit roomier */
     button[data-baseweb="tab"] { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+
+    /* Fix dialog scroll — Streamlit caps dialog height but doesn't set
+       overflow on the inner content div, so long reports get clipped. */
+    div[data-testid="stDialog"] div[data-testid="stDialogContent"] {
+        max-height: 78vh;
+        overflow-y: auto !important;
+    }
+
+    /* Ensure tab panel content can scroll freely on the main page */
+    div[data-testid="stTabPanel"] {
+        overflow-y: visible !important;
+        overflow-x: hidden;
+    }
+
+    /* Prevent any stray overflow:hidden on the main content area */
+    section.main > div { overflow: visible !important; }
+
+    /* Long markdown tables should scroll horizontally rather than overflow */
+    div[data-testid="stMarkdownContainer"] table {
+        display: block;
+        overflow-x: auto;
+    }
 </style>
 """
 
