@@ -5,6 +5,7 @@ Run with:  streamlit run app.py
 
 from __future__ import annotations
 
+import base64
 import contextlib
 import re
 import traceback
@@ -419,13 +420,14 @@ def _render_section_full(run: Run) -> None:
     with cols[1]:
         _popout_button("↗ Pop out", f"{run.ticker} — Full Report", body, key=f"pop_full_{run.folder_name}")
     with cols[2]:
-        st.download_button(
-            label="⬇ MD",
-            data=body,
-            file_name=f"{run.ticker}_{run.timestamp.strftime('%Y%m%d_%H%M%S')}.md",
-            mime="text/markdown",
-            key=f"dl_{run.folder_name}",
-            use_container_width=True,
+        b64 = base64.b64encode(body.encode("utf-8")).decode()
+        fname = f"{run.ticker}_{run.timestamp.strftime('%Y%m%d_%H%M%S')}.md"
+        st.markdown(
+            f'<a href="data:text/markdown;base64,{b64}" download="{fname}"'
+            f' style="display:block;text-align:center;padding:0.4rem 0.5rem;'
+            f'border:1px solid rgba(49,51,63,0.2);border-radius:0.5rem;'
+            f'text-decoration:none;font-size:0.85rem;color:inherit;">⬇ MD</a>',
+            unsafe_allow_html=True,
         )
     render_markdown(body)
 
