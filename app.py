@@ -90,12 +90,10 @@ def parse_run_folder(folder: Path) -> Run | None:
     return Run(path=folder, ticker=ticker, timestamp=ts)
 
 
+@st.cache_data(ttl=5)
 def list_runs(reports_dir_str: str) -> list[Run]:
-    """Rescan reports/ on every call.
-
-    No caching: a directory walk over a few hundred run folders is fast enough,
-    and freshly-written runs from the Run Analysis page need to appear on the
-    Dashboard immediately without requiring a manual refresh.
+    """Rescan reports/ with a 5-second TTL cache so switching between reports
+    doesn't trigger a directory walk on every interaction.
     """
     reports_dir = Path(reports_dir_str)
     if not reports_dir.exists():
@@ -111,6 +109,7 @@ def list_runs(reports_dir_str: str) -> list[Run]:
     return runs
 
 
+@st.cache_data(ttl=60)
 def read_md(path: Path) -> str | None:
     if not path.exists():
         return None
@@ -426,9 +425,10 @@ def page_dashboard(runs: list[Run]) -> None:
         label_visibility="collapsed",
         key="run_pills",
     )
-    if pill_choice and pill_choice != selected_folder:
-        st.session_state["selected_run"] = pill_choice
-        st.rerun()
+    # Use pill_choice directly — no extra st.rerun() needed since pill
+    # interaction already triggers a rerun via Streamlit's widget cycle.
+    selected_folder = pill_choice or selected_folder
+    st.session_state["selected_run"] = selected_folder
 
     run = folder_to_run[selected_folder]
     decision = extract_decision(run)
@@ -453,27 +453,23 @@ def page_dashboard(runs: list[Run]) -> None:
             unsafe_allow_html=True,
         )
 
-    # --- Section tabs (each with a floating pop-out button) ---
-    section_tabs = st.tabs([
-        "📋 Decision",
-        "🔬 Analysts",
-        "🐂🐻 Research",
-        "💼 Trading",
-        "⚖️ Risk",
-        "📄 Full Report",
-    ])
-    with section_tabs[0]:
-        _render_section_portfolio(run)
-    with section_tabs[1]:
-        _render_section_analysts(run)
-    with section_tabs[2]:
-        _render_section_research(run)
-    with section_tabs[3]:
-        _render_section_trading(run)
-    with section_tabs[4]:
-        _render_section_risk(run)
-    with section_tabs[5]:
-        _render_section_full(run)
+    # --- Section tabs ---
+    # Track active tab in session state so we only render the selected tab's
+    # content — avoids loading complete_report.md and all other sections on
+    # every report switch.
+    TAB_LABELS = ["📋 Decision", "🔬 Analysts", "🐂🐻 Research", "💼 Trading", "⚖️ Risk", "📄 Full Report"]
+    TAB_RENDERERS = [
+        _render_section_portfolio,
+        _render_section_analysts,
+        _render_section_research,
+        _render_section_trading,
+        _render_section_risk,
+        _render_section_full,
+    ]
+    section_tabs = st.tabs(TAB_LABELS)
+    for i, (tab, renderer) in enumerate(zip(section_tabs, TAB_RENDERERS)):
+        with tab:
+            renderer(run)
 
     # --- History (collapsible toggle bar at the bottom) ---
     st.write("")
