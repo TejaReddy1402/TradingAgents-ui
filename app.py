@@ -467,7 +467,7 @@ def page_dashboard(runs: list[Run]) -> None:
         _render_section_full,
     ]
     section_tabs = st.tabs(TAB_LABELS)
-    for i, (tab, renderer) in enumerate(zip(section_tabs, TAB_RENDERERS)):
+    for tab, renderer in zip(section_tabs, TAB_RENDERERS, strict=True):
         with tab:
             renderer(run)
 
