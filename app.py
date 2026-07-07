@@ -708,6 +708,7 @@ def page_run() -> None:
     import os as _os
     _env_provider = (_os.environ.get("TRADINGAGENTS_LLM_PROVIDER") or "").strip().lower()
     default_provider = _env_provider if _env_provider in provider_keys else (
+        "google" if _os.environ.get("GOOGLE_API_KEY") else
         "groq" if _os.environ.get("GROQ_API_KEY") else
         "openai" if _os.environ.get("OPENAI_API_KEY") else "ollama"
     )
