@@ -106,15 +106,15 @@ MODEL_OPTIONS: ProviderModeOptions = {
     },
     "google": {
         "quick": [
-            ("Gemini 2.5 Flash - Fast, strong agentic + coding", "gemini-2.5-flash"),
-            ("Gemini 2.0 Flash - Cost-efficient, reliable", "gemini-2.0-flash"),
-            ("Gemini 3.5 Flash - Latest GA (if available)", "gemini-3.5-flash"),
+            ("Gemini 2.0 Flash - Free tier: 1500 RPD ✓ recommended", "gemini-2.0-flash"),
+            ("Gemini 2.5 Flash - Free tier: 20 RPD (exhausts in 1 run)", "gemini-2.5-flash"),
+            ("Gemini 2.0 Flash-Lite - Free tier: 1500 RPD, lightweight", "gemini-2.0-flash-lite"),
             ("Custom model ID", "custom"),
         ],
         "deep": [
-            ("Gemini 2.5 Flash - Balanced speed and quality", "gemini-2.5-flash"),
-            ("Gemini 2.5 Pro - Strongest reasoning", "gemini-2.5-pro"),
-            ("Gemini 3.5 Flash - Latest GA (if available)", "gemini-3.5-flash"),
+            ("Gemini 2.0 Flash - Free tier: 1500 RPD ✓ recommended", "gemini-2.0-flash"),
+            ("Gemini 2.5 Flash - Free tier: 20 RPD (exhausts in 1 run)", "gemini-2.5-flash"),
+            ("Gemini 2.5 Pro - Strongest reasoning (paid tier)", "gemini-2.5-pro"),
             ("Custom model ID", "custom"),
         ],
     },

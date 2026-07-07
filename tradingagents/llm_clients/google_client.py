@@ -1,3 +1,5 @@
+import re
+import time
 from typing import Any
 
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -5,16 +7,52 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from .base_client import BaseLLMClient, normalize_content
 from .validators import validate_model
 
+_RETRY_DELAY_RE = re.compile(r"retryDelay.*?(\d+)s", re.IGNORECASE | re.DOTALL)
+_MAX_RETRIES = 4
+_MAX_WAIT_S = 120  # cap per-attempt wait so we don't hang forever
+
+
+def _parse_retry_delay(exc: Exception) -> float:
+    """Extract the suggested retry delay (seconds) from a Google 429 error string."""
+    m = _RETRY_DELAY_RE.search(str(exc))
+    if m:
+        return min(float(m.group(1)) + 2, _MAX_WAIT_S)
+    return 30.0  # conservative default if header absent
+
 
 class NormalizedChatGoogleGenerativeAI(ChatGoogleGenerativeAI):
-    """ChatGoogleGenerativeAI with normalized content output.
+    """ChatGoogleGenerativeAI with normalized content output and 429 retry.
 
-    Gemini 3 models return content as list of typed blocks.
-    This normalizes to string for consistent downstream handling.
+    Gemini 3 models return content as list of typed blocks; normalizes to
+    string for consistent downstream handling.
+
+    Also retries on RESOURCE_EXHAUSTED (429) using the retryDelay hint
+    embedded in the error response, which handles per-minute quota spikes
+    without burdening the caller.  Daily-quota exhaustion (limit=20 on the
+    free tier) cannot be resolved by retrying and surfaces immediately after
+    _MAX_RETRIES attempts with a clearer message.
     """
 
     def invoke(self, input, config=None, **kwargs):
-        return normalize_content(super().invoke(input, config, **kwargs))
+        last_exc: Exception | None = None
+        for attempt in range(_MAX_RETRIES):
+            try:
+                return normalize_content(super().invoke(input, config, **kwargs))
+            except Exception as exc:
+                msg = str(exc)
+                if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
+                    delay = _parse_retry_delay(exc)
+                    last_exc = exc
+                    if attempt < _MAX_RETRIES - 1:
+                        print(
+                            f"[google_client] 429 rate-limit hit; "
+                            f"waiting {delay:.0f}s before retry "
+                            f"(attempt {attempt + 1}/{_MAX_RETRIES - 1})…"
+                        )
+                        time.sleep(delay)
+                        continue
+                raise
+        raise last_exc  # type: ignore[misc]
 
 
 class GoogleClient(BaseLLMClient):

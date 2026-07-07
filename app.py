@@ -747,9 +747,11 @@ def page_run() -> None:
     # --- LLM Provider & Models ---
     st.markdown("##### LLM provider & models")
     st.caption(
-        "💡 **Free option:** pick **Ollama** to run models locally — no API key required. "
-        "You'll need [ollama.com](https://ollama.com) installed and a model pulled "
-        "(e.g. `ollama pull qwen3`)."
+        "💡 **Free option:** pick **Google** with **Gemini 2.0 Flash** (1 500 req/day free) — "
+        "get a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey). "
+        "Avoid Gemini 2.5 Flash on the free tier (only 20 req/day — exhausted in one run). "
+        "Or pick **Ollama** to run models locally — no API key required; "
+        "install [ollama.com](https://ollama.com) and `ollama pull qwen3`."
     )
 
     # Respect TRADINGAGENTS_LLM_PROVIDER when set (e.g. "ollama" in .env),
@@ -1117,7 +1119,24 @@ def page_run() -> None:
             ta.save_reports(final_state, canonical_ticker, save_path=save_path)
             status.update(label=f"✓ Done — {canonical_ticker} → {decision}", state="complete", expanded=False)
         except Exception as e:
+            err_str = str(e)
             status.update(label=f"✗ Run failed: {e}", state="error")
+            if "RESOURCE_EXHAUSTED" in err_str or "429" in err_str:
+                if "PerDay" in err_str or "per_day" in err_str.lower() or "quota" in err_str.lower():
+                    st.error(
+                        "**Daily quota exhausted for this model.** "
+                        "The Gemini 2.5 Flash free tier allows only **20 requests/day** — "
+                        "a single full analysis uses more than that.\n\n"
+                        "**Fix:** switch to **Gemini 2.0 Flash** in the model dropdowns above "
+                        "(free tier: 1 500 req/day). Or enable billing in "
+                        "[Google AI Studio](https://aistudio.google.com) for unlimited usage."
+                    )
+                else:
+                    st.warning(
+                        "Rate-limited (429). The client will retry automatically next run. "
+                        "If the error persists, switch to **Gemini 2.0 Flash** which has "
+                        "a much higher free-tier quota (1 500 req/day)."
+                    )
             st.exception(e)
             return
 
