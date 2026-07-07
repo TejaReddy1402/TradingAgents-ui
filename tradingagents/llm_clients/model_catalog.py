@@ -106,12 +106,16 @@ MODEL_OPTIONS: ProviderModeOptions = {
     },
     "google": {
         "quick": [
-            ("Gemini 3.5 Flash - Latest, frontier agentic + coding (GA)", "gemini-3.5-flash"),
-            ("Gemini 3.1 Flash Lite - Most cost-efficient", "gemini-3.1-flash-lite"),
+            ("Gemini 2.5 Flash - Fast, strong agentic + coding", "gemini-2.5-flash"),
+            ("Gemini 2.0 Flash - Cost-efficient, reliable", "gemini-2.0-flash"),
+            ("Gemini 3.5 Flash - Latest GA (if available)", "gemini-3.5-flash"),
+            ("Custom model ID", "custom"),
         ],
         "deep": [
-            ("Gemini 3.1 Pro - Reasoning-first, complex workflows (preview)", "gemini-3.1-pro-preview"),
-            ("Gemini 3.5 Flash - Latest GA, strong agentic + coding", "gemini-3.5-flash"),
+            ("Gemini 2.5 Flash - Balanced speed and quality", "gemini-2.5-flash"),
+            ("Gemini 2.5 Pro - Strongest reasoning", "gemini-2.5-pro"),
+            ("Gemini 3.5 Flash - Latest GA (if available)", "gemini-3.5-flash"),
+            ("Custom model ID", "custom"),
         ],
     },
     "xai": {
