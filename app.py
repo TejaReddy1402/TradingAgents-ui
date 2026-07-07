@@ -281,9 +281,23 @@ def decision_badge_html(decision: str | None, size: str = "md") -> str:
 # Pages
 # ---------------------------------------------------------------------------
 
+_LONG_DASH_CELL = re.compile(r"(?<=\|)([ \t]*)[-:]{20,}([ \t]*)(?=\|)")
+
+
+def _normalize_md(text: str) -> str:
+    """Normalize LLM table artifacts before rendering.
+
+    LLMs sometimes generate table separator rows with thousands of dashes
+    instead of the standard '---', causing blank oversized tables.
+    Replace any pipe-delimited cell that is purely dashes/colons (>= 20 chars)
+    with the minimal '---' so the table renders correctly at a sensible size.
+    """
+    return _LONG_DASH_CELL.sub(r"\1---\2", text)
+
+
 def render_markdown(text: str) -> None:
     """Render markdown content. Streamlit handles LaTeX via $...$ natively."""
-    st.markdown(text, unsafe_allow_html=False)
+    st.markdown(_normalize_md(text), unsafe_allow_html=False)
 
 
 def _section_files(run: Run, section_folder: str) -> list[tuple[Path, str]]:
