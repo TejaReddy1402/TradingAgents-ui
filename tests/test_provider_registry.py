@@ -7,7 +7,6 @@ import pytest
 from tradingagents.llm_clients.openai_client import (
     OPENAI_COMPATIBLE_PROVIDERS,
     DeepSeekChatOpenAI,
-    GroqChatOpenAI,
     MinimaxChatOpenAI,
     NormalizedChatOpenAI,
     is_openai_compatible,
@@ -38,7 +37,7 @@ def test_registry_membership():
     ("openrouter", "https://openrouter.ai/api/v1", NormalizedChatOpenAI, False),
     ("mistral", "https://api.mistral.ai/v1", NormalizedChatOpenAI, False),
     ("kimi", "https://api.moonshot.ai/v1", NormalizedChatOpenAI, False),
-    ("groq", "https://api.groq.com/openai/v1", GroqChatOpenAI, False),
+    ("groq", "https://api.groq.com/openai/v1", NormalizedChatOpenAI, False),
     ("nvidia", "https://integrate.api.nvidia.com/v1", NormalizedChatOpenAI, False),
     ("ollama", "http://localhost:11434/v1", NormalizedChatOpenAI, False),
 ])

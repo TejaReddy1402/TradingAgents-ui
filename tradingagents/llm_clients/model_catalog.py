@@ -94,14 +94,14 @@ MODEL_OPTIONS: ProviderModeOptions = {
     },
     "anthropic": {
         "quick": [
-            ("Claude Sonnet 4.6 - Best speed and intelligence balance", "claude-sonnet-4-6"),
+            ("Claude Sonnet 5 - Best speed and intelligence balance", "claude-sonnet-5"),
             ("Claude Haiku 4.5 - Fastest with near-frontier intelligence", "claude-haiku-4-5"),
         ],
         "deep": [
-            ("Claude Opus 4.8 - Latest frontier, agentic coding and reasoning", "claude-opus-4-8"),
+            ("Claude Fable 5 - Most capable, long-running agents", "claude-fable-5"),
+            ("Claude Opus 4.8 - Frontier agentic coding and reasoning", "claude-opus-4-8"),
+            ("Claude Sonnet 5 - Near-frontier intelligence at Sonnet cost", "claude-sonnet-5"),
             ("Claude Opus 4.7 - Previous frontier, long-running agents", "claude-opus-4-7"),
-            ("Claude Opus 4.6 - Frontier intelligence, agents and coding", "claude-opus-4-6"),
-            ("Claude Sonnet 4.6 - Best speed and intelligence balance", "claude-sonnet-4-6"),
         ],
     },
     "google": {
@@ -184,25 +184,15 @@ MODEL_OPTIONS: ProviderModeOptions = {
     # model their account has access to.
     "mistral": _CUSTOM_ONLY,
     "kimi": _CUSTOM_ONLY,
-    # Groq: tool-capable models. Free tier's TPM caps (~6–12k) are too small
-    # for this framework's multi-agent prompts, which run ~6–12k tokens per
-    # call — expect rate-limit 413s on any free-tier model. Upgrade to Groq's
-    # Dev Tier for enough headroom, or use a smaller analyst team.
     "groq": {
         "quick": [
-            ("Llama 3.1 8B Instant — fastest inference", "llama-3.1-8b-instant"),
-            ("Llama 3.3 70B Versatile — strongest 70B, higher-quality output", "llama-3.3-70b-versatile"),
-            ("Kimi K2 Instruct — trained for agentic tool use", "moonshotai/kimi-k2-instruct"),
-            ("Qwen 3 32B — reliable structured output", "qwen/qwen3-32b"),
-            ("Gemma 2 9B IT — small + fast Google model", "gemma2-9b-it"),
+            ("Llama 3.3 70B Versatile - Best tool-calling, 128K ctx", "llama-3.3-70b-versatile"),
+            ("Llama 3.1 8B Instant - Fast, lightweight", "llama-3.1-8b-instant"),
             ("Custom model ID", "custom"),
         ],
         "deep": [
-            ("Llama 3.3 70B Versatile — strongest general model", "llama-3.3-70b-versatile"),
-            ("DeepSeek R1 Distill Llama 70B — reasoning-focused", "deepseek-r1-distill-llama-70b"),
-            ("Kimi K2 Instruct — agentic tool use", "moonshotai/kimi-k2-instruct"),
-            ("Qwen 3 32B — solid reasoning", "qwen/qwen3-32b"),
-            ("Llama 3.1 8B Instant — fastest fallback", "llama-3.1-8b-instant"),
+            ("Llama 3.3 70B Versatile - Best tool-calling, 128K ctx", "llama-3.3-70b-versatile"),
+            ("Compound Beta - Groq multi-model reasoning system", "compound-beta"),
             ("Custom model ID", "custom"),
         ],
     },

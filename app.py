@@ -703,9 +703,14 @@ def page_run() -> None:
         "(e.g. `ollama pull qwen3`)."
     )
 
-    # Default to Ollama if no OpenAI key is set, otherwise OpenAI.
+    # Respect TRADINGAGENTS_LLM_PROVIDER when set (e.g. "ollama" in .env),
+    # then fall back to Ollama when OPENAI_API_KEY is absent, else OpenAI.
     import os as _os
-    default_provider = "openai" if _os.environ.get("OPENAI_API_KEY") else "ollama"
+    _env_provider = (_os.environ.get("TRADINGAGENTS_LLM_PROVIDER") or "").strip().lower()
+    default_provider = _env_provider if _env_provider in provider_keys else (
+        "groq" if _os.environ.get("GROQ_API_KEY") else
+        "openai" if _os.environ.get("OPENAI_API_KEY") else "ollama"
+    )
     default_idx = provider_keys.index(default_provider) if default_provider in provider_keys else 0
 
     pc1, pc2 = st.columns([2, 3])
@@ -724,6 +729,12 @@ def page_run() -> None:
         # previous provider's value (e.g. Ollama's localhost URL sticking
         # around after the user picks Groq).
         backend_url_key = f"backend_url_{provider_key}"
+
+        # Cloudflare quick tunnels (*.trycloudflare.com) expire within hours.
+        # If session state still holds one, auto-heal back to the env default
+        # so the UI never opens to a dead URL.
+        if default_url and "trycloudflare.com" in (st.session_state.get(backend_url_key) or ""):
+            st.session_state[backend_url_key] = default_url
 
         # Some providers (Google, Azure, Bedrock) use SDK-managed endpoints, so
         # there's nothing to type. Show a placeholder so the empty field reads
@@ -828,24 +839,40 @@ def page_run() -> None:
         quick_options = _load_model_options(provider_key, "quick")
         deep_options = _load_model_options(provider_key, "deep")
 
-    def _model_picker(col, mode_label: str, options: list[tuple[str, str]], key: str) -> str:
+    def _model_picker(col, mode_label: str, options: list[tuple[str, str]], key: str, default_model: str = "") -> str:
         with col:
             st.markdown(f"**{mode_label}**")
             if not options:
                 # Provider has no catalog (e.g. azure / mistral / kimi) — free-text
-                return st.text_input(f"{mode_label} model ID", value="", key=key).strip()
+                return st.text_input(f"{mode_label} model ID", value=default_model, key=key).strip()
             labels = [d for d, _ in options]
-            choice = st.selectbox(mode_label, options=labels, label_visibility="collapsed", key=f"{key}_sel")
+            ids = [v for _, v in options]
+            # Pre-select if the env-var model is in the fetched list; fall to
+            # "Custom model ID" (last entry) when it's set but not yet pulled.
+            if default_model and default_model in ids:
+                default_sel_idx = ids.index(default_model)
+            elif default_model:
+                default_sel_idx = len(labels) - 1  # "Custom model ID" sentinel
+            else:
+                default_sel_idx = 0
+            choice = st.selectbox(mode_label, options=labels, index=default_sel_idx, label_visibility="collapsed", key=f"{key}_sel")
             model_id = dict(options)[choice]
             if model_id == "custom":
-                model_id = st.text_input(f"Custom {mode_label.lower()} model ID", value="", key=f"{key}_custom").strip()
+                prefill = default_model if default_model not in ids else ""
+                model_id = st.text_input(f"Custom {mode_label.lower()} model ID", value=prefill, key=f"{key}_custom").strip()
             return model_id
+
+    # Read env-var defaults so the UI pre-selects the right model on every
+    # fresh load — set TRADINGAGENTS_QUICK_THINK_LLM / TRADINGAGENTS_DEEP_THINK_LLM
+    # in .env once and never touch the dropdown again.
+    _env_quick = (_os.environ.get("TRADINGAGENTS_QUICK_THINK_LLM") or "").strip()
+    _env_deep  = (_os.environ.get("TRADINGAGENTS_DEEP_THINK_LLM")  or "").strip()
 
     # Provider-scoped keys so switching provider resets the model picker
     # (otherwise Streamlit keeps the previous provider's model text in the
     # widget, which would then be sent as the model ID for the new provider).
-    quick_model = _model_picker(mc1, "Quick-thinking model", quick_options, f"quick_model_{provider_key}")
-    deep_model = _model_picker(mc2, "Deep-thinking model", deep_options, f"deep_model_{provider_key}")
+    quick_model = _model_picker(mc1, "Quick-thinking model", quick_options, f"quick_model_{provider_key}", default_model=_env_quick)
+    deep_model = _model_picker(mc2, "Deep-thinking model", deep_options, f"deep_model_{provider_key}", default_model=_env_deep)
 
     # --- Provider-specific reasoning effort ---
     reasoning_effort = None
